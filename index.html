@@ -1,0 +1,286 @@
+<!doctype>
+<html ng-app='weekendfifatourney'>
+  <head>
+    <title>Weekend FIFA Tournament</title>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.2.6/angular.min.js'></script>
+    <script src='https://cdn.firebase.com/js/client/1.0.15/firebase.js'></script>
+    <script src='https://cdn.firebase.com/libs/angularfire/0.7.1/angularfire.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js'></script>
+    <script src='https://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js'></script>
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.6.0/underscore-min.js'></script>
+
+    <link rel="stylesheet" href='https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css'>
+    <link rel="stylesheet" href='https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css'>
+    <link rel="stylesheet" href='https://cdnjs.cloudflare.com/ajax/libs/normalize/3.0.1/normalize.css'>
+
+    <style type="text/css">
+      html, body {
+        padding: 0;
+        margin: 0;
+      }
+      
+      .mast-head {
+        background-color: #326295;
+        color: #cdbfe3;
+      }
+      .mast-head h1 {
+        text-align: center;
+        padding: 40px 0;
+      }
+
+      .team-list, .user-list {
+        list-style: none;
+      }
+
+      .team-list li {
+        float: left;
+      }
+
+      .team-list li, .user-list li {
+        padding: 4px;
+      }
+
+      .user-list img, .team-list img {
+        width: 100%;
+        height: auto;
+      }
+
+      .user-item, .team-item {
+        border: 1px solid #666;
+      }
+
+      .user-item {
+        padding: 8px;
+      }
+      
+      .team-item {
+        width: 140px;
+      }
+
+      .team-list > div {
+        color: #FFF;
+      }
+
+      .team-list img {
+        padding: 4px;
+      }
+
+      .user-item h2, .user-item h3, .team-list div {
+        text-align: center;
+      }
+
+    </style>
+  </head>
+  <body ng-controller='FifaController'>
+    <div class='mast-head'>
+      <h1>FIFA World Cup Weekend</h1>
+    </div>
+    <div class='container-fluid'>      
+      <div class='row'>
+        <div class='col-md-4 col-md-offset-2 col-sm-4 col-sm-offset-2'>
+          <form name='user' role='form' ng-submit='addUser(user);' novalidate>
+            <div ng-class="{'form-group': true, 'has-error': user.$error.empty}">
+              <input id='inputError2' type='text' class='form-control' placeholder='Add Player' ng-model='user.name' ng-change='clearError(user);'>
+              <label for='inputError2' class='control-label' ng-show='user.$error.empty'>
+                You gotta give me something!
+              </label>
+            </div>
+          </form>
+        </div>
+        <div class='col-md-4 col-sm-4'>
+          <form name='country' role='form' ng-submit='addTeam(country);' novalidate>
+            <div ng-class="{'form-group': true, 'has-error': country.$error.unknown || country.$error.empty}">
+              <input id='inputError1' type='text' class='form-control' placeholder='Add Team' ng-model='country.name' ng-change='clearError(country);'>
+              <label for='inputError1' class='control-label' ng-show='country.$error.unknown'>
+                Who the hell are {{country.name}}??
+              </label>
+              <label for='inputError1' class='control-label' ng-show='country.$error.empty'>
+                You gotta give me something!
+              </label>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class='row'>
+        <ul class='col-md-8 col-md-offset-2 col-sm-8 col-sm-offset-2 team-list'>
+          <li ng-repeat='team in teams'><div class='team-item'><img ng-src='{{team.img}}'/><div>{{team.name}}</div></div></li>
+        </ul>
+      </div>
+
+      <div class='row'>
+        <ul class='col-md-8 col-md-offset-2 col-sm-8 col-sm-offset-2 user-list'>
+          <li ng-repeat='user in users | orderByPriority'>
+            <div class='user-item'>
+              <h2>{{user.name}}</h2>
+              <hr>
+              <img ng-show='user.team' class='team-img' ng-src='{{user.team.img}}'/>
+              <h3 ng-show='user.team'>{{user.team.name}}</h3>
+              <img ng-hide='user.team' class='team-img' ng-src='{{emptyTeam}}' ng-click='give(user);'/>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+    </div>
+
+    <script>
+      var countries = [
+        {id: 1, name: 'Algeria', img: 'alg.png'},
+        {id: 2, name: 'Cameroon', img: 'cmr.png'},
+        {id: 3, name: "Côte d'Ivoire", img: 'civ.png'},
+        {id: 4, name: 'Ghana', img: 'gha.png'},
+        {id: 5, name: 'Nigeria', img: 'nga.png'},
+        {id: 6, name: 'Australia', img: 'aus.png'},
+        {id: 7, name: 'Iran', img: 'irn.png'},
+        {id: 8, name: 'Japan', img: 'jpn.png'},
+        {id: 9, name: 'Korea Republic', img: 'kor.png'},
+        {id: 10, name: 'Belgium', img: 'bel.png'},
+        {id: 11, name: 'Bosnia and Herzegovina', img: 'bih.png'},
+        {id: 12, name: 'Croatia', img: 'cro.png'},
+        {id: 13, name: 'England', img: 'eng.png'},
+        {id: 14, name: 'France', img: 'fra.png'},
+        {id: 15, name: 'Germany', img: 'ger.png'},
+        {id: 16, name: 'Greece', img: 'gre.png'},
+        {id: 17, name: 'Italy', img: 'ita.png'},
+        {id: 18, name: 'Netherlands', img: 'ned.png'},
+        {id: 19, name: 'Portugal', img: 'por.png'},
+        {id: 20, name: 'Russia', img: 'rus.png'},
+        {id: 21, name: 'Spain', img: 'esp.png'},
+        {id: 22, name: 'Switzerland', img: 'sui.png'},
+        {id: 23, name: 'Costa Rica', img: 'crc.png'},
+        {id: 24, name: 'Honduras', img: 'hon.png'},
+        {id: 25, name: 'Mexico', img: 'mex.png'},
+        {id: 26, name: 'USA', img: 'usa.png'},
+        {id: 27, name: 'Argentina', img: 'arg.png'},
+        {id: 28, name: 'Brazil', img: 'bra.png'},
+        {id: 29, name: 'Chile', img: 'chi.png'},
+        {id: 30, name: 'Colombia', img: 'col.png'},
+        {id: 31, name: 'Ecuador', img: 'ecu.png'},
+        {id: 32, name: 'Uruguay', img: 'uru.png'}
+      ];
+
+      var baseDbUrl = 'https://weekendfifatourney.firebaseio.com';
+      var empty = 'empty.gif';
+
+      angular.module('weekendfifatourney', ['firebase'])
+        .factory('UserService', ['$firebase', function($firebase) {
+          var ref = new Firebase(baseDbUrl + '/users');
+          return $firebase(ref);
+        }])
+        .factory('TeamService', ['$firebase', function($firebase) {
+          var ref = new Firebase(baseDbUrl + '/teams');
+          return $firebase(ref);
+        }])
+        .controller('FifaController', ['$scope', 'TeamService', 'UserService', function($scope, teamService, userService) {
+          $scope.teams = teamService;
+          $scope.teamIds = [];
+          $scope.teams.$on('child_added', function(event) {
+            $scope.teamIds.push(event.snapshot.value.id);
+          });
+          $scope.teams.$on('child_removed', function(event) {
+            $scope.teamIds = _.filter($scope.teamIds, function(item) { return item !== event.snapshot.value.id; });
+          });
+
+          $scope.addTeam = function(country) {
+            if ( _.isEmpty(country.name)) {
+              country.$error.empty = true;
+              return;
+            }
+
+            var found = _.find(countries, function( c ) {
+              return c.name.toLowerCase().indexOf(country.name.toLowerCase()) > -1;
+            });
+
+            if ( found ) {
+              var exists = _.find($scope.teamIds, function(ids) {
+                return ids === found.id;
+              });
+            
+              if ( exists ) {
+                // do not need to add it.
+              } else {
+                $scope.teams.$add(angular.copy(found));
+              }
+              country.$error.unknown = false;
+              country.name = '';
+            } else {
+              country.$error.unknown = true;
+            }
+          };
+
+          $scope.clearError = function(object) {
+            object.$error.unknown = false;
+            object.$error.empty = false;
+          };
+
+          $scope.emptyTeam = empty;
+          $scope.users = userService;
+          $scope.users.$bind($scope, 'allusers');
+          $scope.userTotal = 0;
+          var teamsInUse = [];
+          $scope.users.$on('child_added', function(event) {
+            $scope.userTotal++;
+            var user = event.snapshot.value;
+            if ( user.team ) {
+              teamsInUse.push(user.team.id);
+            }
+          });
+          $scope.users.$on('child_removed', function(event) {
+            console.log('got removed event: ' + JSON.stringify(event.snapshot.value));
+            $scope.userTotal--;
+          });
+          $scope.users.$on('child_changed', function(event) {
+            var user = event.snapshot.value;
+            if ( user.team ) {
+              teamsInUse.push(user.team.id);
+            }
+          });
+
+          $scope.addUser = function(user) {
+            if ( _.isEmpty(user.name)) {
+              user.$error.empty = true;
+              return;
+            }
+
+            $scope.users.$add({name: user.name});
+            user.name = '';
+          };
+
+          $scope.give = function(user) {
+            var allteams = _.clone($scope.teamIds);
+            var uniqueTeamsInUse = _.uniq(teamsInUse);
+
+            var mapping = {};
+            _.each(allteams, function(team) {
+              mapping[team] = 0;
+            });
+
+            _.each(uniqueTeamsInUse, function(team) {
+              mapping[team]++;
+            });
+
+            var low = _.min(mapping, function(seen) {
+              return seen;
+            });
+
+            var choosable = [];
+            _.each(mapping, function(seen, teamid) {
+              if (seen === low) choosable.push(teamid);
+            });
+
+            var index = _.random(0, choosable.length-1);
+            choosable = _.shuffle(choosable);
+
+            var teamid = parseInt(choosable[index]);
+            var team = _.find(countries, function(country) {
+              return country.id === teamid;
+            });
+
+            console.log(user.name + ' gets: ' + team.name);
+            $scope.allusers[user.$id].team = _.clone(team);
+          };
+        }]);
+    </script>
+  </body>
+</html>
